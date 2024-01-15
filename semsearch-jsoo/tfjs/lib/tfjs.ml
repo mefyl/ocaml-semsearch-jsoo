@@ -14,35 +14,27 @@ module Tensor = struct
     Js.to_array output
 end
 
-let require pkg =
-  lazy
-    (Fmt.pr "JS require('%s')@." pkg;
-     Js.Unsafe.fun_call
-       (Js.Unsafe.js_expr "require")
-       [| Js.string pkg |> Js.Unsafe.inject |])
+let tf = Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs") |}
 
-let tf = require "@tensorflow/tfjs"
-let tfn = require "@tensorflow/tfjs-node"
+let tfn =
+  Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs-node") |}
 
 (** This is required to register Node-specific backends. *)
 
 let load_graph_model handler =
-  Js.Unsafe.fun_call
-    (Lazy.force tf)##.loadGraphModel
-    [| Js.Unsafe.inject handler |]
+  Js.Unsafe.fun_call tf##.loadGraphModel [| Js.Unsafe.inject handler |]
   |> Promise.to_lwt
 
 let load_saved_model path =
   Js.Unsafe.fun_call
-    (Lazy.force tfn)##.node##.loadSavedModel
+    tfn##.node##.loadSavedModel
     [| Js.string path |> Js.Unsafe.inject |]
   |> Promise.to_lwt
 
-let ready () = Js.Unsafe.fun_call (Lazy.force tf)##.ready [||] |> Promise.to_lwt
+let ready () = Js.Unsafe.fun_call tf##.ready [||] |> Promise.to_lwt
 
 let tensor2d data shape dtype =
-  Js.Unsafe.fun_call
-    (Lazy.force tf)##.tensor2d
+  Js.Unsafe.fun_call tf##.tensor2d
     [|
       Js.Unsafe.inject data;
       Js.array shape |> Js.Unsafe.inject;
@@ -50,20 +42,18 @@ let tensor2d data shape dtype =
     |]
 
 let zeros shape dtype =
-  Js.Unsafe.fun_call
-    (Lazy.force tf)##.zeros
+  Js.Unsafe.fun_call tf##.zeros
     [|
       Js.array shape |> Js.Unsafe.inject;
       Dtype.to_string dtype |> Js.string |> Js.Unsafe.inject;
     |]
 
 let matmul tensor1 tensor2 =
-  Js.Unsafe.fun_call
-    (Lazy.force tf)##.matMul
+  Js.Unsafe.fun_call tf##.matMul
     [| Js.Unsafe.inject tensor1; Js.Unsafe.inject tensor2 |]
 
 let transpose tensor =
-  Js.Unsafe.fun_call (Lazy.force tf)##.transpose [| Js.Unsafe.inject tensor |]
+  Js.Unsafe.fun_call tf##.transpose [| Js.Unsafe.inject tensor |]
 
 let reshape tensor (shape : int array) =
   let shape_js = Js.array shape in
@@ -77,7 +67,7 @@ module IO = struct
 
   let tfn_fs_handler path =
     Js.Unsafe.fun_call
-      (Lazy.force tfn)##.io##.fileSystem
+      tfn##.io##.fileSystem
       [| path |> Js.string |> Js.Unsafe.inject |]
 end
 
@@ -108,22 +98,20 @@ module Backend = struct
     | "wasm" -> Wasm
     | s -> Other s
 
-  let wasm_backend = require "@tensorflow/tfjs-backend-wasm"
+  let wasm_backend =
+    lazy
+      (Js_of_ocaml.Js.Unsafe.pure_js_expr
+         {| require("@tensorflow/tfjs-backend-wasm") |})
 
   let set backend : unit Lwt.t =
     (* XXX: it's a more complicated story for some other backends. *)
-    (match backend with
-    | Native_tensorflow -> ignore (Lazy.force tfn)
-    | Wasm -> ignore (Lazy.force wasm_backend)
-    | _ -> ());
+    (match backend with Wasm -> ignore (Lazy.force wasm_backend) | _ -> ());
 
     let backend = to_string backend in
 
-    Js.Unsafe.fun_call
-      (Lazy.force tf)##.setBackend
+    Js.Unsafe.fun_call tf##.setBackend
       [| Js.string backend |> Js.Unsafe.inject |]
     |> Promise.to_lwt
 
-  let get () : string =
-    Js.Unsafe.fun_call (Lazy.force tf)##.getBackend [||] |> Js.to_string
+  let get () : string = Js.Unsafe.fun_call tf##.getBackend [||] |> Js.to_string
 end
