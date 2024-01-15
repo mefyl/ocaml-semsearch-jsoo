@@ -9,14 +9,13 @@
 (license GPL-3.0-or-later)
 
 (authors "yberreby <yberreby@pm.me>")
+
 (maintainers "yberreby <yberreby@pm.me>")
 
 (package
  (name semsearch-jsoo)
  (synopsis "Semantic search in OCaml for JSOO")
- (depends
-   tfjs
-   sbert-jsoo))
+ (depends tfjs sbert-jsoo))
 
 (package
  (name tfjs)
@@ -24,12 +23,12 @@
  (depends
   (ocaml
    (>= 4.14.1))
-    base
-    fmt
-    lwt_ppx
-    js_of_ocaml
-    js_of_ocaml-ppx
-    js_of_ocaml-lwt))
+  base
+  fmt
+  lwt_ppx
+  js_of_ocaml
+  js_of_ocaml-ppx
+  js_of_ocaml-lwt))
 
 (package
  (name sbert-jsoo)
@@ -37,9 +36,10 @@
  (depends
   (ocaml
    (>= 4.14.1))
-    base
-    fmt
-    lwt_ppx
-    js_of_ocaml
-    js_of_ocaml-ppx
-    js_of_ocaml-lwt))
+  base
+  fmt
+  lwt_ppx
+  js_of_ocaml
+  js_of_ocaml-ppx
+  js_of_ocaml-lwt
+  tfjs))
