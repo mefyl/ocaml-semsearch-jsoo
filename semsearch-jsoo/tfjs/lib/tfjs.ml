@@ -4,8 +4,17 @@ include Tfjs_intf
 type model
 type io_handler
 
+let tf = Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs") |}
+
+let tfn =
+  Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs-node") |}
+
 module Tensor = struct
   type t
+
+  let concat tensors =
+    Js.Unsafe.meth_call tf "concat"
+      [| Js.array tensors |> Js.Unsafe.inject; 0 |> Js.Unsafe.inject |]
 
   let to_array tensor : float Array.t =
     let output =
@@ -13,11 +22,6 @@ module Tensor = struct
     in
     Js.to_array output
 end
-
-let tf = Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs") |}
-
-let tfn =
-  Js_of_ocaml.Js.Unsafe.pure_js_expr {| require("@tensorflow/tfjs-node") |}
 
 (** This is required to register Node-specific backends. *)
 
